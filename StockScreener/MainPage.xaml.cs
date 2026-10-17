@@ -1,29 +1,42 @@
-﻿namespace StockScreener
+﻿
+namespace StockScreener
 {
     public partial class MainPage : ContentPage
     {
-        int count = 0;
-
         public MainPage()
         {
             InitializeComponent();
         }
 
-        private void OnCounterClicked(object? sender, EventArgs e)
+        /// <summary>
+        /// Rev 00.01.01 -SS- Test Button Clicked - test notification on Android 13+ (API 33+)
+        /// </summary>
+        private async void OnTestButtonClicked(object sender, EventArgs e)
         {
-            count++;
 
-            if (count == 1)
-                CounterBtn.Text = $"Clicked {count} time";
-            else
-                CounterBtn.Text = $"Clicked {count} times";
+#if ANDROID
+                var status = await Permissions.RequestAsync<Permissions.PostNotifications>();
+                if (status != PermissionStatus.Granted)
+                    return;
 
-            SemanticScreenReader.Announce(CounterBtn.Text);
-        }
+                var context = Platform.AppContext;
+                
+                if (OperatingSystem.IsAndroidVersionAtLeast(26))
+                {
+                    var channel = new Android.App.NotificationChannel("main", "General", Android.App.NotificationImportance.Default);
+                    var manager = (Android.App.NotificationManager)context.GetSystemService(Android.Content.Context.NotificationService)!;
+                    manager.CreateNotificationChannel(channel);
 
-        private async void OnNewButtonClicked(object? sender, EventArgs e)
-        {
-            await DisplayAlert("Button", "New button clicked", "OK");
+                    var builder = new AndroidX.Core.App.NotificationCompat.Builder(context, "main");
+                        builder.SetContentTitle("Test Notification");
+                        builder.SetContentText("This is a test notification.");
+                        builder.SetSmallIcon(Resource.Mipmap.appicon);
+                        var notification = builder.Build();
+
+                    AndroidX.Core.App.NotificationManagerCompat.From(context)!.Notify(1, notification);
+                }
+#endif
+
         }
     }
 }
